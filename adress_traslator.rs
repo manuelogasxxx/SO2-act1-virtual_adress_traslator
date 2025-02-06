@@ -153,6 +153,12 @@ fn show_vm_info(vm:u32, memory: &Memory, pag_table: &Vec<u32>){
         let aux = pag_table[(3+vm_high) as usize];
         println!("Dirección Física");
         println!("{} , {:b}",aux, aux);
+        let phs_low= make_low_mask(memory.frame_bits)& aux;
+        let phs_high = aux>>memory.frame_bits;
+        println!("Marco de pagina");
+        println!("{} , {:b}",phs_low, phs_low);
+        println!("Bits de control");
+        println!("{} , {:05b}",phs_high, phs_high);
         //mando a llamar una función para los datos de los bits de control
     }
 }
