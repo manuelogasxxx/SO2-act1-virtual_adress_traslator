@@ -36,7 +36,7 @@ struct Memory{
 
 
 //no se verifican diviciones entre 0
-fn build_memory(page_size : u32, vm : u32, physic : u32)->Memory{
+fn build_memory(page_size : u32, physic : u32, vm : u32)->Memory{
     let frames = physic / page_size;
     let pages = vm/page_size;
     Memory{
@@ -120,22 +120,58 @@ fn read_numbers_from_file(filename: &str) -> io::Result<Vec<u32>> {
     Ok(numbers)
 }
 
+/* 
+fn control_bits_info(n:u32){
+    //son 5 bits de control
+    let mask:u32=16;
+    let mut aux:u32 =0;
+    for i in 0..5{
+        aux=
+    }
+}*/
 
 //función que muestra la información del 
 
 //ya logré sacar la info xd
-fn show_info(vm:u32, memory: &Memory){
+fn show_vm_info(vm:u32, memory: &Memory, pag_table: &Vec<u32>){
     let vm_low = make_low_mask(memory.offset_bits) & vm;
     let vm_high = vm>>memory.offset_bits;
-    println!("{:b}",vm);
-    println!("{:b}",vm_low);
-    println!("{:b}",vm_high);
+
+    println!("Datos de la pagina");
+    println!("Dirección virtual");
+    println!("{} , {:b}",vm, vm);
+    println!("Desplazamiento");
+    println!("{} , {:b}",vm_low, vm_low);
+    println!("No. de Pagina");
+    println!("{} , {:b}",vm_high, vm_high);
+
+    //ahora busco la página vm_high y le saco la info
+    if (vm_high+3) as usize > pag_table.len(){
+        println!("Page does not exist in the pagination table");
+    }
+    else{
+        let aux = pag_table[(3+vm_high) as usize];
+        println!("Dirección Física");
+        println!("{} , {:b}",aux, aux);
+        //mando a llamar una función para los datos de los bits de control
+    }
+}
+
+
+fn show_memory_info(m: &Memory){
+    println!("|---NOW we are working with (Bytes)->");
+    println!("Physical Memory: {}  | bits: {}",m.physic,m.frame_bits + m.offset_bits);
+    println!("Virtual  Memory: {}  | bits: {}",m.vm,m.pages_bits+ m.offset_bits);
+    println!("Page size: {}  | bits: {}",m.page_size, m.offset_bits);
+    println!("|---SO there are ->");
+    println!("# Frames: {} | bits: {}",m.frames,m.frame_bits );
+    println!("# Pages: {}  | bits: {}",m.pages, m.pages_bits);
+    
 }
 
 
 fn main(){
    let filename = "pruebita.txt";
-   //let numbers = read_numbers_from_file(filename).expect("Error al leer el archivo");
    let numbers: Vec<u32> = match read_numbers_from_file(filename) {
         Ok(nums) => nums,
         Err(e) => {
@@ -147,17 +183,14 @@ fn main(){
     if !memory_check(&numbers) {
         return;
     }
-
-    //del índice 3 en adelante ya es la tabla de páginas
-
-    //función para contruir la memoria
-    println!("{:?}",numbers);
+    
     let mut memory = build_memory(numbers[0],numbers[1],numbers[2]);
+    show_memory_info(&memory);
     //en este punto ya todo está comprobado y listo
     //println!("{0}",memory.page_bits);
     // ya comienzo con la lectura de direcciones virtuales
-    println!("{0}",memory.pages_bits);
-    show_info(190, &memory);
+    //println!("{0}",memory.pages_bits);
+    show_vm_info(0, &memory,&numbers);
     //no manejo errores cuando ingresa valores no numéricos 
     /*loop {
         println!("Ingrese el valor decimal de una dirección virtual");
@@ -183,12 +216,3 @@ fn main(){
 
 
 }
-
-
-//por el momento no va a manejar todos los errores para irnos más facil xd, cuando termine ya le pongo las comprobaciones
-
-
-//ya leo del archivo 
-
-
-//definir máximos para números de páginas, marcos 
