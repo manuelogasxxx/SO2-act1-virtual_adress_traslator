@@ -27,7 +27,8 @@ struct Memory{
     page_size: u32, // Page size (bytes)
     pages: u32,     //Total number of pages
     frames: u32,     //Total numbers of marks
-    page_bits: u32,     //necesary bits to represent # page_size
+    offset_bits: u32,     //necesary bits to represent # page_size
+    pages_bits: u32,
     frame_bits: u32,     //necesary bits to represent marks
 }
 
@@ -37,13 +38,15 @@ struct Memory{
 //no se verifican diviciones entre 0
 fn build_memory(page_size : u32, vm : u32, physic : u32)->Memory{
     let frames = physic / page_size;
+    let pages = vm/page_size;
     Memory{
         physic,
         vm,
         page_size,
-        pages: vm/page_size,
+        pages,
         frames,
-        page_bits: page_size.trailing_zeros(),
+        offset_bits: page_size.trailing_zeros(),
+        pages_bits: pages.trailing_zeros(),
         frame_bits: frames.trailing_zeros(),
     }
 }
@@ -64,13 +67,28 @@ fn make_low_mask(shift:u32)->u32{
     return (1<< shift)-1;
 }
 
-fn make_high_mask(shift:u32)->u32{
+fn make_high_mask(shift:u32, aux:u32)->u32{
     if shift>32{
         panic!("Unable to make that mask :(");
     }
     let  mut result:u32 = (1<< shift)-1;
-    result<<=shift;
+    result<<=aux;
     return result;
+}
+
+//obtener los bits mas significativos
+fn get_msb(number: u32, bits: u32) -> u32 {
+    let longitud = 32; // Longitud en bits del tipo de dato (u32 en este caso)
+
+    if bits > longitud {
+        panic!("No se pueden obtener más bits que la longitud del número.");
+    }
+
+    let shift = longitud - bits;
+    let mask = (1 << bits) - 1; // Crea una máscara de N bits
+    println!("{:b}",mask);
+
+    (mask << shift) & number
 }
 
 fn memory_check(v: &Vec<u32>)->bool{
@@ -104,11 +122,14 @@ fn read_numbers_from_file(filename: &str) -> io::Result<Vec<u32>> {
 
 
 //función que muestra la información del 
+
+//ya logré sacar la info xd
 fn show_info(vm:u32, memory: &Memory){
-    //necesito sacar la información de la memoria
-    println!("jijija");
-    let mut mask1 = make_high_mask(memory.page_bits);
-    println!("{:b}",mask1);
+    let vm_low = make_low_mask(memory.offset_bits) & vm;
+    let vm_high = vm>>memory.offset_bits;
+    println!("{:b}",vm);
+    println!("{:b}",vm_low);
+    println!("{:b}",vm_high);
 }
 
 
@@ -135,7 +156,8 @@ fn main(){
     //en este punto ya todo está comprobado y listo
     //println!("{0}",memory.page_bits);
     // ya comienzo con la lectura de direcciones virtuales
-    show_info(10, &memory);
+    println!("{0}",memory.pages_bits);
+    show_info(190, &memory);
     //no manejo errores cuando ingresa valores no numéricos 
     /*loop {
         println!("Ingrese el valor decimal de una dirección virtual");
