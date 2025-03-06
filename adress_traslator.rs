@@ -119,11 +119,11 @@ fn show_vm_info(vm:u32, memory: &Memory, pag_table: &Vec<u32>){
             println!("Fallo de página");
         }
         else{
-            println!("Dirección Física");
+            println!("Physical Addres");
         println!("{} , {:0width$b}",aux1, aux1, width=(memory.frame_bits + memory.offset_bits) as usize);
-        println!("Marco de página");
+        println!("Frame");
         println!("{} , {:0width$b}",phs_low, phs_low, width=(memory.frame_bits) as usize);
-        println!("Bits de control");
+        println!("Control Bits");
         println!("{} , {:0width$b}",phs_high, phs_high, width=5);
         bit_control_info(phs_high);
         }
