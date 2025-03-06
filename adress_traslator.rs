@@ -1,10 +1,12 @@
-//coded by Manuel Fernández Mercado FCC BUAP 
+//coded by Manuel Fernández Mercado FCC BUAP
+//Marco Eduardo Baéz Gonzales FCC BUAP
+//Eduardo Ulises Estrada Gonzales FCC BUAP
 use std::process;
 use std::fs::File;
 use std::io::{self,BufRead};
 use std::path::Path;
 
-struct Memory{
+struct Memory{ //struct to store memory information
     physic: u32,    //Physic memory (bytes)
     vm: u32,      //Virtual memory (bytes)
     page_size: u32, // Page size (bytes)
@@ -14,7 +16,7 @@ struct Memory{
     pages_bits: u32,
     frame_bits: u32,     //necesary bits to represent marks
 }
-
+//constructor fot the struct 
 fn build_memory(page_size : u32, physic : u32, vm : u32)->Memory{
     let frames = physic / page_size;
     let pages = vm/page_size;
@@ -35,12 +37,20 @@ fn is_power_of_two(n:u32)->bool{
     return n>0 && (n&(n-1))==0;
 }
 
+/*
+this function make a shift' 1's consecutive mask 
+starting from the lsb 
+*/
 fn make_low_mask(shift:u32)->u32{
     if shift>32{
         panic!("Unable to make that mask :(");
     }
     return (1<< shift)-1;
 }
+
+/*
+this function checks if the given memory has the correct values
+*/
 
 fn memory_check(v: &Vec<u32>)->bool{
     if !is_power_of_two(v[0]) || !is_power_of_two(v[1]) || !is_power_of_two(v[2]){
@@ -57,6 +67,10 @@ fn memory_check(v: &Vec<u32>)->bool{
     return true;
 }
 
+/*
+read a file and store each line into an Vec<u32>
+*/
+
 fn read_numbers_from_file(filename: &str) -> io::Result<Vec<u32>> {
     let path = Path::new(filename);
     let file = File::open(path)?;
@@ -70,6 +84,9 @@ fn read_numbers_from_file(filename: &str) -> io::Result<Vec<u32>> {
     }
     Ok(numbers)
 }
+
+
+//shows all the memory info
 
 fn show_vm_info(vm:u32, memory: &Memory, pag_table: &Vec<u32>){
     let vm_low = make_low_mask(memory.offset_bits) & vm; 
@@ -93,11 +110,25 @@ fn show_vm_info(vm:u32, memory: &Memory, pag_table: &Vec<u32>){
         println!("{} , {:b}",aux, aux);
         let phs_low= make_low_mask(memory.frame_bits)& aux;
         let phs_high = aux>>memory.frame_bits;
-        println!("Frame");
-        println!("{} , {:b}",phs_low, phs_low);
-        println!("Control Bits");
-        println!("{} , {:05b}",phs_high, phs_high);
-        //mando a llamar una función para los datos de los bits de control
+
+        let mut aux1= phs_low<<memory.offset_bits;
+        aux1= aux1+vm_low;
+
+        //corroboro las cosillas
+        if(pag_table[(3+vm_high) as usize] ==0 || phs_high & 1 ==0 ){
+            println!("Fallo de página");
+        }
+        else{
+            println!("Dirección Física");
+        println!("{} , {:0width$b}",aux1, aux1, width=(memory.frame_bits + memory.offset_bits) as usize);
+        println!("Marco de página");
+        println!("{} , {:0width$b}",phs_low, phs_low, width=(memory.frame_bits) as usize);
+        println!("Bits de control");
+        println!("{} , {:0width$b}",phs_high, phs_high, width=5);
+        bit_control_info(phs_high);
+        }
+
+        
     }
 }
 
@@ -149,7 +180,6 @@ fn show_memory_info(m: &Memory){
     println!("|---SO there are ->");
     println!("# Frames: {} | bits: {}",m.frames,m.frame_bits );
     println!("# Pages: {}  | bits: {}",m.pages, m.pages_bits);
-    
 }
 
 fn main(){
@@ -166,6 +196,8 @@ fn main(){
     }
     let mut memory = build_memory(numbers[0],numbers[1],numbers[2]);
     show_memory_info(&memory);
+    //show_vm_info(391, &memory,&numbers);
+    //no manejo errores cuando ingresa valores no numéricos 
     loop {
         println!("\nIngrese el valor decimal de una dirección virtual o (salir)");
         let mut input = String::new();
