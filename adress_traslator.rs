@@ -1,25 +1,8 @@
 //coded by Manuel Fernández Mercado FCC BUAP 
-
-/*
-Paso 1: obtener los datos del archivo de texto *pendiente*
-
-Paso 2: saber cuantos marcos y páginas hay con su respectivo 
-        tamaño en bits, se obtiene el desplazamiento,
-
-Paso 3: El programa lee un número y saca su numéro de pagina
-
-*/
-
-
-
-/*
-Nota: Todos los tamaños de la memoria están en bytes
-*/
 use std::process;
 use std::fs::File;
 use std::io::{self,BufRead};
 use std::path::Path;
-
 
 struct Memory{
     physic: u32,    //Physic memory (bytes)
@@ -32,10 +15,6 @@ struct Memory{
     frame_bits: u32,     //necesary bits to represent marks
 }
 
-//constructor of "Memory"
-
-
-//no se verifican diviciones entre 0
 fn build_memory(page_size : u32, physic : u32, vm : u32)->Memory{
     let frames = physic / page_size;
     let pages = vm/page_size;
@@ -51,44 +30,16 @@ fn build_memory(page_size : u32, physic : u32, vm : u32)->Memory{
     }
 }
 
-
 //important functions using bit manipulation
-
 fn is_power_of_two(n:u32)->bool{
     return n>0 && (n&(n-1))==0;
 }
-
-
 
 fn make_low_mask(shift:u32)->u32{
     if shift>32{
         panic!("Unable to make that mask :(");
     }
     return (1<< shift)-1;
-}
-
-fn make_high_mask(shift:u32, aux:u32)->u32{
-    if shift>32{
-        panic!("Unable to make that mask :(");
-    }
-    let  mut result:u32 = (1<< shift)-1;
-    result<<=aux;
-    return result;
-}
-
-//obtener los bits mas significativos
-fn get_msb(number: u32, bits: u32) -> u32 {
-    let longitud = 32; // Longitud en bits del tipo de dato (u32 en este caso)
-
-    if bits > longitud {
-        panic!("No se pueden obtener más bits que la longitud del número.");
-    }
-
-    let shift = longitud - bits;
-    let mask = (1 << bits) - 1; // Crea una máscara de N bits
-    println!("{:b}",mask);
-
-    (mask << shift) & number
 }
 
 fn memory_check(v: &Vec<u32>)->bool{
@@ -112,7 +63,7 @@ fn read_numbers_from_file(filename: &str) -> io::Result<Vec<u32>> {
     let reader = io::BufReader::new(file);
     let mut numbers = Vec::new();
     for line in reader.lines() {
-        let line = line?; // Desempaqueta la línea o retorna un error
+        let line = line?; 
         if let Ok(num) = line.trim().parse::<u32>() {
             numbers.push(num);
         }
@@ -120,30 +71,17 @@ fn read_numbers_from_file(filename: &str) -> io::Result<Vec<u32>> {
     Ok(numbers)
 }
 
-/* 
-fn control_bits_info(n:u32){
-    //son 5 bits de control
-    let mask:u32=16;
-    let mut aux:u32 =0;
-    for i in 0..5{
-        aux=
-    }
-}*/
-
-//función que muestra la información del 
-
-//ya logré sacar la info xd
 fn show_vm_info(vm:u32, memory: &Memory, pag_table: &Vec<u32>){
-    let vm_low = make_low_mask(memory.offset_bits) & vm;
+    let vm_low = make_low_mask(memory.offset_bits) & vm; 
     let vm_high = vm>>memory.offset_bits;
-
-    println!("Datos de la pagina");
-    println!("Dirección virtual");
-    println!("{} , {:b}",vm, vm);
-    println!("Desplazamiento");
-    println!("{} , {:b}",vm_low, vm_low);
-    println!("No. de Pagina");
-    println!("{} , {:b}",vm_high, vm_high);
+    
+    println!("\n|---Page info\n");
+    println!("Virtual Adress");
+    println!("{} , {:0width$b}",vm, vm, width=(memory.offset_bits+memory.pages_bits) as usize);
+    println!("Offset");
+    println!("{} , {:0width$b}",vm_low, vm_low,width=(memory.offset_bits) as usize );
+    println!("# Page");
+    println!("{} , {:0width$b}",vm_high, vm_high,width=(memory.pages_bits) as usize );
 
     //ahora busco la página vm_high y le saco la info
     if (vm_high+3) as usize > pag_table.len(){
@@ -151,18 +89,57 @@ fn show_vm_info(vm:u32, memory: &Memory, pag_table: &Vec<u32>){
     }
     else{
         let aux = pag_table[(3+vm_high) as usize];
-        println!("Dirección Física");
+        println!("Physical Adress");
         println!("{} , {:b}",aux, aux);
         let phs_low= make_low_mask(memory.frame_bits)& aux;
         let phs_high = aux>>memory.frame_bits;
-        println!("Marco de pagina");
+        println!("Frame");
         println!("{} , {:b}",phs_low, phs_low);
-        println!("Bits de control");
+        println!("Control Bits");
         println!("{} , {:05b}",phs_high, phs_high);
         //mando a llamar una función para los datos de los bits de control
     }
 }
 
+fn bit_control_info(aux:u32){
+    let mut mask:u32=16;
+    if mask & aux ==0{
+        //5to bit
+        print!("Caché inhabilitado-");
+    }
+    else{
+        print!("Caché habilitado-");
+    }
+    mask>>=1;
+    if mask & aux ==0{
+        //4to bit
+        print!("No referida-");
+    }
+    else{
+        print!("Referida-")
+    }
+    mask>>=1;
+    if mask & aux ==0{
+        print!("No modificada-");
+    }
+    else{
+        print!("Modificada-");
+    }
+    mask>>=1;
+    if mask & aux ==0{
+        print!("Permiso de lectura/escritura-");
+    }
+    else{
+        print!("Permiso de solo lectura-");
+    }
+    mask>>=1;
+    if mask & aux ==0{
+        println!("Ausente");
+    }
+    else{
+        println!("Presente");
+    }
+}
 
 fn show_memory_info(m: &Memory){
     println!("|---NOW we are working with (Bytes)->");
@@ -175,50 +152,31 @@ fn show_memory_info(m: &Memory){
     
 }
 
-
 fn main(){
    let filename = "pruebita.txt";
    let numbers: Vec<u32> = match read_numbers_from_file(filename) {
         Ok(nums) => nums,
         Err(e) => {
-            eprintln!("Error al leer el archivo: {}", e);
+            eprintln!("Error while reading the archive :8 {}", e);
             process::exit(1);
         }
     };
-
     if !memory_check(&numbers) {
         return;
     }
-    
     let mut memory = build_memory(numbers[0],numbers[1],numbers[2]);
     show_memory_info(&memory);
-    //en este punto ya todo está comprobado y listo
-    //println!("{0}",memory.page_bits);
-    // ya comienzo con la lectura de direcciones virtuales
-    //println!("{0}",memory.pages_bits);
-    show_vm_info(0, &memory,&numbers);
-    //no manejo errores cuando ingresa valores no numéricos 
-    /*loop {
-        println!("Ingrese el valor decimal de una dirección virtual");
+    loop {
+        println!("\nIngrese el valor decimal de una dirección virtual o (salir)");
         let mut input = String::new();
         io::stdin().read_line(&mut input).expect("Failed to read line");
-
-        // Trim whitespace and handle potential errors
-        let input = input.trim(); // Important: Trim whitespace!
-
-        if input == "salir" {  // Correct comparison
+        let input = input.trim();
+        if input == "salir" {
             break;
         }
-
-        match input.parse::<u32>() { // More robust parsing
-            Ok(choice) => show_info(choice, &memory),
-            Err(e) => println!("Error: {}", e), // Handle parsing errors
+        match input.parse::<u32>() { 
+            Ok(choice) => show_vm_info(choice, &memory,&numbers),
+            Err(e) => println!("Error: {}", e), 
         }
-    } */
-
-    
-
-
-
-
+    }
 }
